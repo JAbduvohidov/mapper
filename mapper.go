@@ -7,41 +7,51 @@ import (
 const tagName = "map"
 
 // Map maps fields from struct A to struct B based on a 'map' tag.
-// A is the source struct, and B is the target struct type.
-// The function returns a new instance of B with mapped values from A.
 func Map[B any](A any) B {
-	aValue := reflect.Indirect(reflect.ValueOf(A))
+	var b B
+	mapStruct(reflect.ValueOf(A), reflect.ValueOf(&b).Elem())
+	return b
+}
+
+// mapStruct performs the actual mapping from A to B, handling nested structs.
+func mapStruct(aValue reflect.Value, bValue reflect.Value) {
+	aValue = reflect.Indirect(aValue)
 	if aValue.Kind() != reflect.Struct {
-		var zeroB B
-		return zeroB // Early return with zero value of B if A is not a struct.
+		return
 	}
 
-	bContainer := new(B)
-	bValue := reflect.Indirect(reflect.ValueOf(bContainer))
+	if bValue.Kind() == reflect.Ptr {
+		bValue = bValue.Elem()
+	}
 
-	collector := make(map[string]any, aValue.NumField())
+	collector := make(map[string]reflect.Value)
 	for i := 0; i < aValue.NumField(); i++ {
-		field := aValue.Type().Field(i)
-		tagValue, ok := field.Tag.Lookup(tagName)
+		field := aValue.Field(i)
+		fieldType := aValue.Type().Field(i)
+		tagValue, ok := fieldType.Tag.Lookup(tagName)
 		if !ok {
 			continue
 		}
-		collector[tagValue] = aValue.Field(i).Interface()
+		collector[tagValue] = field
 	}
 
 	for i := 0; i < bValue.NumField(); i++ {
-		field := bValue.Type().Field(i)
-		tagValue, ok := field.Tag.Lookup(tagName)
-		if !ok || !bValue.Field(i).CanSet() {
+		bField := bValue.Field(i)
+		bFieldType := bValue.Type().Field(i)
+		tagValue, ok := bFieldType.Tag.Lookup(tagName)
+		if !ok || !bField.CanSet() {
 			continue
 		}
-		if value, exists := collector[tagValue]; exists {
-			newValue := reflect.ValueOf(value)
-			if newValue.Type().AssignableTo(bValue.Field(i).Type()) {
-				bValue.Field(i).Set(newValue)
+		if aValue, exists := collector[tagValue]; exists {
+			if aValue.Kind() == reflect.Struct && (bField.Kind() == reflect.Ptr || bField.Kind() == reflect.Struct) {
+				// Handle nested structs: Initialize the field if it's nil.
+				if bField.Kind() == reflect.Ptr && bField.IsNil() {
+					bField.Set(reflect.New(bField.Type().Elem()))
+				}
+				mapStruct(aValue, bField)
+			} else if aValue.Type().AssignableTo(bField.Type()) {
+				bField.Set(aValue)
 			}
 		}
 	}
-
-	return *bContainer
 }
