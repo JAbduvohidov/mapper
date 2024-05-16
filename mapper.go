@@ -2,6 +2,7 @@ package mapper
 
 import (
 	"reflect"
+	"time"
 )
 
 const tagName = "map"
@@ -43,12 +44,16 @@ func mapStruct(aValue reflect.Value, bValue reflect.Value) {
 			continue
 		}
 		if aValue, exists := collector[tagValue]; exists {
-			if aValue.Kind() == reflect.Struct && (bField.Kind() == reflect.Ptr || bField.Kind() == reflect.Struct) {
-				// Handle nested structs: Initialize the field if it's nil.
-				if bField.Kind() == reflect.Ptr && bField.IsNil() {
+			if aValue.Kind() == reflect.Struct {
+				// Handle time.Time specifically
+				if aValue.Type() == reflect.TypeOf(time.Time{}) && bField.Type() == reflect.TypeOf(time.Time{}) {
+					bField.Set(aValue)
+				} else if bField.Kind() == reflect.Ptr && bField.IsNil() {
 					bField.Set(reflect.New(bField.Type().Elem()))
+					mapStruct(aValue, bField.Elem())
+				} else if bField.Kind() == reflect.Struct {
+					mapStruct(aValue, bField)
 				}
-				mapStruct(aValue, bField)
 			} else if aValue.Type().AssignableTo(bField.Type()) {
 				bField.Set(aValue)
 			}
