@@ -1,6 +1,7 @@
 package mapper
 
 import (
+	"github.com/shopspring/decimal"
 	"reflect"
 	"time"
 )
@@ -45,8 +46,9 @@ func mapStruct(aValue reflect.Value, bValue reflect.Value) {
 		}
 		if aValue, exists := collector[tagValue]; exists {
 			if aValue.Kind() == reflect.Struct {
-				// Handle time.Time specifically
 				if aValue.Type() == reflect.TypeOf(time.Time{}) && bField.Type() == reflect.TypeOf(time.Time{}) {
+					bField.Set(aValue)
+				} else if aValue.Type() == reflect.TypeOf(decimal.Decimal{}) && bField.Type() == reflect.TypeOf(decimal.Decimal{}) {
 					bField.Set(aValue)
 				} else if bField.Kind() == reflect.Ptr && bField.IsNil() {
 					bField.Set(reflect.New(bField.Type().Elem()))
