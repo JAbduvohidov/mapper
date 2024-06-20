@@ -7,11 +7,12 @@ import (
 )
 
 type StructA struct {
-	FieldA        int             `map:"fieldA"`
-	FieldB        string          `map:"fieldB"`
-	FieldC        time.Time       `map:"fieldC"`
-	FieldD        decimal.Decimal `map:"fieldD"`
-	NestedStructA NestedStructA   `map:"nestedStructA"`
+	FieldA              int             `map:"fieldA"`
+	FieldB              string          `map:"fieldB"`
+	FieldC              time.Time       `map:"fieldC"`
+	FieldD              decimal.Decimal `map:"fieldD"`
+	NestedStructA       NestedStructA   `map:"nestedStructA"`
+	NestedSliceStructsA []NestedStructA `map:"nestedSliceStructsA"`
 }
 
 type NestedStructA struct {
@@ -19,14 +20,16 @@ type NestedStructA struct {
 	FieldB string          `map:"fieldB"`
 	FieldC time.Time       `map:"fieldC"`
 	FieldD decimal.Decimal `map:"fieldD"`
+	FieldE []int           `map:"fieldE"`
 }
 
 type StructB struct {
-	FieldA        int             `map:"fieldA"`
-	FieldB        string          `map:"fieldB"`
-	FieldC        time.Time       `map:"fieldC"`
-	FieldD        decimal.Decimal `map:"fieldD"`
-	NestedStructB NestedStructB   `map:"nestedStructA"`
+	FieldA              int             `map:"fieldA"`
+	FieldB              string          `map:"fieldB"`
+	FieldC              time.Time       `map:"fieldC"`
+	FieldD              decimal.Decimal `map:"fieldD"`
+	NestedStructB       NestedStructB   `map:"nestedStructA"`
+	NestedSliceStructsB []NestedStructB `map:"nestedSliceStructsA"`
 }
 
 type NestedStructB struct {
@@ -34,6 +37,7 @@ type NestedStructB struct {
 	FieldB string          `map:"fieldB"`
 	FieldC time.Time       `map:"fieldC"`
 	FieldD decimal.Decimal `map:"fieldD"`
+	FieldE []int           `map:"fieldE"`
 }
 
 func TestMap(t *testing.T) {
@@ -47,6 +51,22 @@ func TestMap(t *testing.T) {
 			FieldB: "world",
 			FieldC: time.Now().Add(time.Hour),
 			FieldD: decimal.NewFromFloat(3.15),
+		},
+		NestedSliceStructsA: []NestedStructA{
+			{
+				FieldA: 2,
+				FieldB: "hello",
+				FieldC: time.Now().Add(time.Hour),
+				FieldD: decimal.NewFromFloat(3.15),
+				FieldE: []int{1, 2, 3},
+			},
+			{
+				FieldA: 2,
+				FieldB: "world",
+				FieldC: time.Now().Add(time.Hour),
+				FieldD: decimal.NewFromFloat(3.15),
+				FieldE: []int{1, 2, 3},
+			},
 		},
 	}
 
@@ -80,7 +100,11 @@ func TestMap(t *testing.T) {
 		t.Error("invalid nestedStruct fieldC value")
 	}
 
-	if structA.NestedStructA.FieldC != structB.NestedStructB.FieldC {
+	if !structA.NestedStructA.FieldD.Equal(structB.NestedStructB.FieldD) {
 		t.Error("invalid nestedStruct fieldD value")
+	}
+
+	if len(structA.NestedSliceStructsA) != len(structB.NestedSliceStructsB) {
+		t.Error("invalid sliceNestedStruct len")
 	}
 }
