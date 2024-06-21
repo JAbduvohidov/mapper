@@ -41,70 +41,78 @@ type NestedStructB struct {
 }
 
 func TestMap(t *testing.T) {
-	structA := StructA{
-		FieldA: 1,
-		FieldB: "hello",
-		FieldC: time.Now(),
-		FieldD: decimal.NewFromFloat(3.14),
-		NestedStructA: NestedStructA{
-			FieldA: 2,
-			FieldB: "world",
-			FieldC: time.Now().Add(time.Hour),
-			FieldD: decimal.NewFromFloat(3.15),
-		},
-		NestedSliceStructsA: []NestedStructA{
-			{
-				FieldA: 2,
-				FieldB: "hello",
-				FieldC: time.Now().Add(time.Hour),
-				FieldD: decimal.NewFromFloat(3.15),
-				FieldE: []int{1, 2, 3},
-			},
-			{
+	structA := []StructA{
+		{
+			FieldA: 1,
+			FieldB: "hello",
+			FieldC: time.Now(),
+			FieldD: decimal.NewFromFloat(3.14),
+			NestedStructA: NestedStructA{
 				FieldA: 2,
 				FieldB: "world",
 				FieldC: time.Now().Add(time.Hour),
 				FieldD: decimal.NewFromFloat(3.15),
-				FieldE: []int{1, 2, 3},
+			},
+			NestedSliceStructsA: []NestedStructA{
+				{
+					FieldA: 2,
+					FieldB: "hello",
+					FieldC: time.Now().Add(time.Hour),
+					FieldD: decimal.NewFromFloat(3.15),
+					FieldE: []int{1, 2, 3},
+				},
+				{
+					FieldA: 2,
+					FieldB: "world",
+					FieldC: time.Now().Add(time.Hour),
+					FieldD: decimal.NewFromFloat(3.15),
+					FieldE: []int{1, 2, 3},
+				},
 			},
 		},
 	}
 
-	structB := Map[StructB](structA)
+	structB := Map[[]StructB](structA)
 
-	if structA.FieldA != structB.FieldA {
-		t.Error("invalid fieldA value")
+	if len(structA) != len(structB) {
+		t.Error("invalid structB len")
 	}
 
-	if structA.FieldB != structB.FieldB {
-		t.Error("invalid fieldB value")
-	}
+	for i, a := range structA {
+		if a.FieldA != structB[i].FieldA {
+			t.Error("invalid fieldA value")
+		}
 
-	if structA.FieldC != structB.FieldC {
-		t.Error("invalid fieldC value")
-	}
+		if a.FieldB != structB[i].FieldB {
+			t.Error("invalid fieldB value")
+		}
 
-	if !structA.FieldD.Equal(structB.FieldD) {
-		t.Error("invalid fieldD value")
-	}
+		if a.FieldC != structB[i].FieldC {
+			t.Error("invalid fieldC value")
+		}
 
-	if structA.NestedStructA.FieldA != structB.NestedStructB.FieldA {
-		t.Error("invalid nestedStruct fieldA value")
-	}
+		if !a.FieldD.Equal(structB[i].FieldD) {
+			t.Error("invalid fieldD value")
+		}
 
-	if structA.NestedStructA.FieldB != structB.NestedStructB.FieldB {
-		t.Error("invalid nestedStruct fieldB value")
-	}
+		if a.NestedStructA.FieldA != structB[i].NestedStructB.FieldA {
+			t.Error("invalid nestedStruct fieldA value")
+		}
 
-	if structA.NestedStructA.FieldC != structB.NestedStructB.FieldC {
-		t.Error("invalid nestedStruct fieldC value")
-	}
+		if a.NestedStructA.FieldB != structB[i].NestedStructB.FieldB {
+			t.Error("invalid nestedStruct fieldB value")
+		}
 
-	if !structA.NestedStructA.FieldD.Equal(structB.NestedStructB.FieldD) {
-		t.Error("invalid nestedStruct fieldD value")
-	}
+		if a.NestedStructA.FieldC != structB[i].NestedStructB.FieldC {
+			t.Error("invalid nestedStruct fieldC value")
+		}
 
-	if len(structA.NestedSliceStructsA) != len(structB.NestedSliceStructsB) {
-		t.Error("invalid sliceNestedStruct len")
+		if !a.NestedStructA.FieldD.Equal(structB[i].NestedStructB.FieldD) {
+			t.Error("invalid nestedStruct fieldD value")
+		}
+
+		if len(a.NestedSliceStructsA) != len(structB[i].NestedSliceStructsB) {
+			t.Error("invalid sliceNestedStruct len")
+		}
 	}
 }

@@ -22,6 +22,19 @@ func Map[B any](A any) B {
 		aValue = aValue.Elem()
 	}
 
+	// Handle if A is a slice
+	if aValue.Kind() == reflect.Slice {
+		bSlice := reflect.MakeSlice(reflect.TypeOf(b), aValue.Len(), aValue.Len())
+		for i := 0; i < aValue.Len(); i++ {
+			aElem := aValue.Index(i)
+			bElem := reflect.New(bSlice.Type().Elem()).Elem()
+			mapStruct(aElem, bElem)
+			bSlice.Index(i).Set(bElem)
+		}
+		bValue.Elem().Set(bSlice)
+		return b
+	}
+
 	// Dereference if B is a pointer and allocate memory if needed
 	if bValue.Kind() == reflect.Ptr {
 		if bValue.IsNil() {
