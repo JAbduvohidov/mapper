@@ -11,18 +11,45 @@ const tagName = "map"
 // Map maps fields from struct A to struct B based on a 'map' tag.
 func Map[B any](A any) B {
 	var b B
-	mapStruct(reflect.ValueOf(A), reflect.ValueOf(&b).Elem())
+	aValue := reflect.ValueOf(A)
+	bValue := reflect.ValueOf(&b)
+
+	// Dereference if A is a pointer
+	if aValue.Kind() == reflect.Ptr {
+		if aValue.IsNil() {
+			panic("source struct is nil")
+		}
+		aValue = aValue.Elem()
+	}
+
+	// Dereference if B is a pointer and allocate memory if needed
+	if bValue.Kind() == reflect.Ptr {
+		if bValue.IsNil() {
+			bValue.Set(reflect.New(bValue.Type().Elem()))
+		}
+		bValue = bValue.Elem()
+	}
+
+	mapStruct(aValue, bValue)
 	return b
 }
 
 // mapStruct performs the actual mapping from A to B, handling nested structs and slices.
-func mapStruct(aValue reflect.Value, bValue reflect.Value) {
-	aValue = reflect.Indirect(aValue)
+func mapStruct(aValue, bValue reflect.Value) {
+	if aValue.Kind() == reflect.Ptr {
+		if aValue.IsNil() {
+			return
+		}
+		aValue = aValue.Elem()
+	}
 	if aValue.Kind() != reflect.Struct {
 		return
 	}
 
 	if bValue.Kind() == reflect.Ptr {
+		if bValue.IsNil() {
+			bValue.Set(reflect.New(bValue.Type().Elem()))
+		}
 		bValue = bValue.Elem()
 	}
 
@@ -48,8 +75,25 @@ func mapStruct(aValue reflect.Value, bValue reflect.Value) {
 	}
 }
 
-// mapField performs the actual mapping of individual fields, handling nested structs and slices.
+// mapField performs the actual mapping of individual fields, handling nested structs, slices, and pointers.
 func mapField(aField, bField reflect.Value) {
+	if !aField.IsValid() || !bField.IsValid() {
+		return
+	}
+
+	if aField.Kind() == reflect.Ptr {
+		if aField.IsNil() {
+			return
+		}
+		aField = aField.Elem()
+	}
+	if bField.Kind() == reflect.Ptr {
+		if bField.IsNil() {
+			bField.Set(reflect.New(bField.Type().Elem()))
+		}
+		bField = bField.Elem()
+	}
+
 	switch aField.Kind() {
 	case reflect.Struct:
 		switch aField.Type() {
@@ -62,9 +106,6 @@ func mapField(aField, bField reflect.Value) {
 				bField.Set(aField)
 			}
 		default:
-			if bField.Kind() == reflect.Ptr && bField.IsNil() {
-				bField.Set(reflect.New(bField.Type().Elem()))
-			}
 			mapStruct(aField, bField)
 		}
 	case reflect.Slice:
